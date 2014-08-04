@@ -113,6 +113,31 @@ class Flagbit_FactFinder_Model_Layer_Filter_Attribute_Abstract extends Mage_Cata
     	}
 
         return $this->_filterItems;
-    }	
-	
+    }
+
+    /**
+     * Initialize filter items
+     *
+     * @return  Mage_Catalog_Model_Layer_Filter_Abstract
+     */
+    protected function _initItems()
+    {
+        $data = $this->_getItemsData();
+        $items=array();
+        foreach ($data as $itemData) {
+            $items[] = $this->_createItem(
+                isset($itemData['label']) ? $itemData['label'] : '',
+                isset($itemData['value']) ? $itemData['value'] : '',
+                isset($itemData['count']) ? $itemData['count'] : '',
+                isset($itemData['selected']) ? $itemData['selected'] : '',
+                isset($itemData['seoPath']) ? $itemData['seoPath'] : '',
+                isset($itemData['requestVar']) ? $itemData['requestVar'] : '',
+                isset($itemData['queryParams']) ? $itemData['queryParams'] : '',
+                isset($itemData['previewImage']) ? $itemData['previewImage'] : ''
+            );
+        }
+        $this->_items = $items;
+        return $this;
+    }
 }
+
