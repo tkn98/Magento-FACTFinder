@@ -108,6 +108,8 @@ class Flagbit_FactFinder_Model_Handler_Search
             $params['query'] = $_query;
             $params['page'] = $helper->getCurrentPage();
 
+            $params['query'] .= ' ' . $requestParams['identifier'];
+
             // add Sorting Param, but only if it was set explicitly via url
             foreach($requestParams as $key => $value) {
                 if($key == 'order'

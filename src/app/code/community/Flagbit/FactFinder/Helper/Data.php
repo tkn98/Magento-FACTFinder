@@ -20,6 +20,8 @@
  */
 class Flagbit_FactFinder_Helper_Data extends Mage_Core_Helper_Abstract {
 
+    const IDENTIFIER_VAR_NAME = 'identifier';
+
 	/**
 	 * returns Module Status by Module Code
 	 *
@@ -69,5 +71,15 @@ class Flagbit_FactFinder_Helper_Data extends Mage_Core_Helper_Abstract {
             $urlPath = 'factfinder/proxy/scic';
         }
         return $urlPath;
+    }
+
+    /**
+     * Retrieve identifier parameter name
+     *
+     * @return string
+     */
+    public function getIdentifierParamName()
+    {
+        return self::IDENTIFIER_VAR_NAME;
     }
 }

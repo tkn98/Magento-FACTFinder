@@ -418,4 +418,26 @@ class Flagbit_FactFinder_Helper_Search extends Mage_Core_Helper_Abstract {
     {
         return Mage::helper('catalogsearch')->getQueryText();
     }
+
+    /**
+     * Retrieve identifier
+     *
+     * @return string
+     */
+    public function getIdentifier($whitespace)
+    {
+        $identifier = $this->_getRequest()->getParam(Mage::helper('factfinder')->getIdentifier());
+        if ($identifier === null || $identifier == ' ') {
+            $identifier = '';
+        } else {
+            /* @var $stringHelper Mage_Core_Helper_String */
+            $stringHelper = Mage::helper('core/string');
+            $identifier = is_array($identifier) ? ''
+                : $stringHelper->cleanString(trim($identifier));
+        }
+        if($whitespace && $identifier != '') {
+            $identifier = ' ' . $identifier;
+        }
+        return $identifier;
+    }
 }
