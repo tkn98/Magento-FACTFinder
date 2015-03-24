@@ -122,6 +122,14 @@
                     </setEnabledFlagInFactFinderConfig>
                 </observers>
             </controller_action_predispatch_adminhtml_system_config_save>
+            <controller_front_init_before>
+                <observers>
+                    <factfinder>
+                        <class>factfinder/autoloader</class>
+                        <method>addAutoloader</method>
+                    </factfinder>
+                </observers>
+            </controller_front_init_before>
         </events>
         <cache>
             <types>
