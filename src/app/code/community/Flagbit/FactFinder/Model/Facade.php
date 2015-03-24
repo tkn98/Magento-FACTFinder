@@ -323,15 +323,6 @@ class Flagbit_FactFinder_Model_Facade
 
         if(!isset($this->_adapters[$hashKey][$channel]))
         {
-            /*
-            // new tracking needs session ID and sourceRefKey for every request
-            // helper must not be used inside this class, as it is also used without the app context
-            // TODO: do it in a different way
-            if(!Mage::helper('factfinder')->useOldTracking()) {
-                $dataProvider->setParam('sourceRefKey', Mage::getSingleton('core/session')->getFactFinderRefKey());
-                $dataProvider->setParam('sid'         , md5(Mage::getSingleton('core/session')->getSessionId()));
-            }*/
-
             $this->_adapters[$hashKey][$channel] = FF::getInstance(
                 'Adapter\\'.ucfirst($type),
                 $this->_dic['loggerClass'],
@@ -356,7 +347,7 @@ class Flagbit_FactFinder_Model_Facade
 
     public function setConfiguration($configArray)
     {
-        $this->_config = FF::getSingleton('configuration', $configArray);
+        $this->_config = new FACTFinderCustom_Configuration($configArray);
     }
 
     /**
@@ -402,11 +393,8 @@ class Flagbit_FactFinder_Model_Facade
 
     public function getSuggestUrl()
     {
-        $urlBuilder = $this->_getUrlBuilder();
-        $urlBuilder->setAction('Suggest.ff');
-        $urlBuilder->setParams(array());
-
-        return $urlBuilder->getNonAuthenticationUrl();
+        return $this->_getUrlBuilder()
+            ->getNonAuthenticationUrl('Suggest.ff', $this->_dic['requestParser']->getRequestParameters());
     }
 
     protected function _getUrlBuilder()
@@ -524,7 +512,6 @@ class Flagbit_FactFinder_Model_Facade
     {
         try {
             $channel = $this->getConfiguration()->getChannel();
-            $this->_loadAllData();
             return $this->_statusHelpers[$channel]->getVersionNumber();
         } catch (Exception $e) {
             Mage::logException($e);
@@ -548,7 +535,6 @@ class Flagbit_FactFinder_Model_Facade
     {
         try {
             $channel = $this->getConfiguration()->getChannel();
-            $this->_loadAllData();
             return $this->_statusHelpers[$channel]->getVersionString();
         } catch (Exception $e) {
             Mage::logException($e);
@@ -561,7 +547,6 @@ class Flagbit_FactFinder_Model_Facade
         try {
             if(!$channel)
                 $channel = $this->getConfiguration()->getChannel();
-            $this->_loadAllData();
             return $this->_statusHelpers[$channel]->getStatusCode();
         } catch (Exception $e) {
             Mage::logException($e);
@@ -577,5 +562,9 @@ class Flagbit_FactFinder_Model_Facade
     public function getRequestParams()
     {
         return $this->_getParamsParser()->getRequestParams();
+    }
+
+    public function getDic() {
+        return $this->_dic;
     }
 }

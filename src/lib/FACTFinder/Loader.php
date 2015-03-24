@@ -31,13 +31,13 @@ if ( array_search(FF_LIB_DIR, $includePaths, true) === false )
 {
 	set_include_path( get_include_path() . PATH_SEPARATOR . FF_LIB_DIR);
 }
-spl_autoload_register(array('FACTFinder\Loader', 'autoload'));
+spl_autoload_register(array('FACTFinder\Loader', 'autoload'),true,true);
 
 // don't know, whether I should do that
 if (function_exists('__autoload')
     && array_search('__autoload', spl_autoload_functions()) === false)
 {
-    spl_autoload_register('__autoload');
+    spl_autoload_register('__autoload',true,true);
 }
 
 /**
@@ -56,6 +56,7 @@ class Loader
     public static function autoload($classname)
     {
         $filename = self::getFilename($classname);
+        print_r($filename);
         if (file_exists($filename))
             include_once $filename;
     }
@@ -136,9 +137,10 @@ class Loader
         $factfinderClassName = 'FACTFinder\\' . $name;
         $defaultClassName    = $name;
 
-        if (class_exists($customClassName))
-            $className = $customClassName;
-        else if (class_exists($factfinderClassName))
+        //if (class_exists($customClassName))
+        //    $className = $customClassName;
+        //else
+        if (class_exists($factfinderClassName))
             $className = $factfinderClassName;
         else if (class_exists($defaultClassName))
             $className = $defaultClassName;
