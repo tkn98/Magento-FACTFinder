@@ -362,7 +362,8 @@ class Flagbit_FactFinder_Model_Handler_Search
                 Mage::logException(new Exception($error));
             }
             $this->_searchResult = array();
-            if($result instanceof FACTFinder_Result) {
+
+            if($result instanceof \FACTFinder\Data\Result) {
                 foreach ($result AS $record){
                     if(isset($this->_searchResult[$record->getId()])) {
                         continue;
@@ -370,8 +371,7 @@ class Flagbit_FactFinder_Model_Handler_Search
                     $this->_searchResult[$record->getId()] = new Varien_Object(
                         array(
                             'similarity' => $record->getSimilarity(),
-                            'position' => $record->getPosition(),
-                            'original_position' => $record->getOriginalPosition()
+                            'position' => $record->getPosition()
                         )
                     );
                 }

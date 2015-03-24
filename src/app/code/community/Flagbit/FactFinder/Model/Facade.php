@@ -9,6 +9,8 @@
 
 require_once BP.DS.'lib'.DS.'FACTFinder'.DS.'Loader.php';
 
+use FACTFinder\Loader as FF;
+
 /**
  * Model class
  *
@@ -42,6 +44,11 @@ class Flagbit_FactFinder_Model_Facade
     protected $_config = null;
 
     /**
+     * @var FACTFinder_Abstract_Configuration
+     */
+    protected $_dic = null;
+
+    /**
      * @var FACTFinder_ParametersParser
      */
     protected $_paramsParser = null;
@@ -73,7 +80,76 @@ class Flagbit_FactFinder_Model_Facade
         if ($arg === null || !($arg instanceof FACTFinder_Abstract_Logger)) {
             $arg = Mage::helper('factfinder/debug');
         }
-        FF::setLogger($arg);
+
+        $dic = FF::getInstance('Util\Pimple');
+
+        $dic['loggerClass'] = function($c) {
+            return Mage::helper('factfinder/debug');
+        };
+
+        $dic['configuration'] = function($c) {
+            return new FACTFinderCustom_Configuration();
+        };
+
+        $dic['request'] = $dic->factory(function($c) {
+            return $c['requestFactory']->getRequest();
+        });
+
+        $dic['requestFactory'] = function($c) {
+            return FF::getInstance(
+                'Core\Server\MultiCurlRequestFactory',
+                $c['loggerClass'],
+                $c['configuration'],
+                $c['requestParser']->getRequestParameters()
+            );
+        };
+
+        $dic['clientUrlBuilder'] = function($c) {
+            return FF::getInstance(
+                'Core\Client\UrlBuilder',
+                $c['loggerClass'],
+                $c['configuration'],
+                $c['requestParser'],
+                $c['encodingConverter']
+            );
+        };
+
+        $dic['serverUrlBuilder'] = function($c) {
+            return FF::getInstance(
+                'Core\Server\UrlBuilder',
+                $c['loggerClass'],
+                $c['configuration']
+            );
+        };
+
+        $dic['requestParser'] = function($c) {
+            return FF::getInstance(
+                'Core\Client\RequestParser',
+                $c['loggerClass'],
+                $c['configuration'],
+                $c['encodingConverter']
+            );
+        };
+
+        $dic['encodingConverter'] = function($c) {
+            if (extension_loaded('iconv'))
+                $type = 'Core\IConvEncodingConverter';
+            else if (function_exists('utf8_encode')
+                && function_exists('utf8_decode'))
+                $type = 'Core\Utf8EncodingConverter';
+            else
+                throw new \Exception('No encoding conversion available.');
+
+            return FF::getInstance(
+                $type,
+                $c['loggerClass'],
+                $c['configuration']
+            );
+        };
+
+        $this->_dic = $dic;
+
+//        FF::setLogger($arg);
         $this->_logger = $arg;
     }
 
@@ -184,12 +260,11 @@ class Flagbit_FactFinder_Model_Facade
 
     protected function _configureAdapter($params, $type, $channel = null, $id = null)
     {
-        $adapter = $this->_getAdapter($type, $channel, $id);
         $adapterId = $this->_getAdapterIdentifier($type, $channel, $id);
         $this->_paramHashes[$adapterId] = $this->_createParametersHash($params);
 
         foreach($params as $key => $value)
-            $adapter->setParam($key, $value);
+            $this->_dic['requestParser']->getClientRequestParameters()->set($key, $value);
     }
 
     /**
@@ -240,20 +315,14 @@ class Flagbit_FactFinder_Model_Facade
      */
     protected function _getAdapter($type, $channel = null, $id = null)
     {
-        $format = $this->_getFormat($type);
         $hashKey = $this->_getAdapterIdentifier($type, $channel, $id);
 
         // get the channel after calculating the adapter identifier
         if(!$channel)
-            $channel = $this->_getConfiguration()->getChannel();
+            $channel = $this->getConfiguration()->getChannel();
 
         if(!isset($this->_adapters[$hashKey][$channel]))
         {
-            $config            = $this->_getConfiguration();
-            $encodingHandler   = FF::getSingleton('encodingHandler', $config);
-            $dataProvider      = $this->_getParallelDataProvider();
-            $dataProvider->setParam('channel', $channel);
-
             /*
             // new tracking needs session ID and sourceRefKey for every request
             // helper must not be used inside this class, as it is also used without the app context
@@ -264,51 +333,23 @@ class Flagbit_FactFinder_Model_Facade
             }*/
 
             $this->_adapters[$hashKey][$channel] = FF::getInstance(
-                $format.'/'.$type.'Adapter',
-                $dataProvider,
-                $this->_getParamsParser(),
-                $encodingHandler,
-                $this->_logger
+                'Adapter\\'.ucfirst($type),
+                $this->_dic['loggerClass'],
+                $this->_dic['configuration'],
+                $this->_dic['request'],
+                $this->_dic['clientUrlBuilder']
             );
         }
         return $this->_adapters[$hashKey][$channel];
     }
 
-    protected function _getFormat($type)
-    {
-        $format = 'http';
-        if (!in_array($type, array('scic', 'suggest', 'legacyTracking'))) {
-            $version = $this->_getConfiguration()->getFactFinderVersion();
-            $format = 'xml' . $version;
-            return $format;
-        }
-        return $format;
-    }
-
-    public function configureStatusHelper($channel = null)
-    {
-        if(!$channel)
-            $channel = $this->_getConfiguration()->getChannel();
-        if(!isset($this->_statusHelpers[$channel]))
-        {
-            $config            = $this->_getConfiguration();
-            $encodingHandler   = FF::getSingleton('encodingHandler', $config);
-            $this->_statusHelpers[$channel] = FF::getInstance(
-                'http/statusHelper',
-                $config,
-                $this->_logger,
-                $channel
-            );
-        }
-    }
-
     /**
      * @return FACTFinderCustom_Configuration config
      */
-    protected function _getConfiguration($configArray = null)
+    public function getConfiguration($configArray = null)
     {
         if ($this->_config == null) {
-            $this->_config = FF::getSingleton('configuration', $configArray);
+            $this->_config = $this->_dic['configuration'];
         }
         return $this->_config;
     }
@@ -323,7 +364,7 @@ class Flagbit_FactFinder_Model_Facade
      * @return \Flagbit_FactFinder_Model_Facade
      */
     public function setStoreId($storeId) {
-        $this->_getConfiguration()->setStoreId($storeId);
+        $this->getConfiguration()->setStoreId($storeId);
 
         return $this;
     }
@@ -333,7 +374,7 @@ class Flagbit_FactFinder_Model_Facade
      **/
     protected function _getParallelDataProvider()
     {
-        $config = $this->_getConfiguration();
+        $config = $this->getConfiguration();
         $params = $this->_getParamsParser()->getServerRequestParams();
         $dp = FACTFinder_Http_ParallelDataProvider::getDataProvider($params, $config, $this->_logger);
         return $dp;
@@ -345,18 +386,18 @@ class Flagbit_FactFinder_Model_Facade
     protected function _getParamsParser()
     {
         if ($this->_paramsParser == null) {
-            $config = $this->_getConfiguration();
-            $encodingHandler = FF::getSingleton('encodingHandler', $config);
-            $this->_paramsParser = FF::getInstance('parametersParser', $config, $encodingHandler);
+            $this->_paramsParser = FF::getInstance(
+                'Data\SearchParameters',
+                $this->_dic['requestParser']->getRequestParameters()
+            );
         }
         return $this->_paramsParser;
     }
 
     public function getManagementUrl()
     {
-        $urlBuilder = $this->_getUrlBuilder();
-        $urlBuilder->setAction('Management.ff');
-        return $urlBuilder->getNonAuthenticationUrl();
+        return $this->_getUrlBuilder()
+            ->getNonAuthenticationUrl('Management.ff', $this->_dic['requestParser']->getRequestParameters());
     }
 
     public function getSuggestUrl()
@@ -371,10 +412,7 @@ class Flagbit_FactFinder_Model_Facade
     protected function _getUrlBuilder()
     {
         if($this->_urlBuilder === null) {
-            $config = $this->_getConfiguration();
-            $params = $this->_getParamsParser()->getServerRequestParams();
-
-            $this->_urlBuilder = FF::getInstance('http/urlBuilder', $params, $config, $this->_logger);
+            $this->_urlBuilder = $this->_dic['serverUrlBuilder'];
         }
         return $this->_urlBuilder;
     }
@@ -467,8 +505,6 @@ class Flagbit_FactFinder_Model_Facade
 
         if ($data == null) {
             try {
-                $this->_loadAllData();
-
                 $adapter = $this->_getAdapter($type, $channel, $id);
                 $data = $adapter->$objectGetter();
 
@@ -487,7 +523,7 @@ class Flagbit_FactFinder_Model_Facade
     public function getActualFactFinderVersion()
     {
         try {
-            $channel = $this->_getConfiguration()->getChannel();
+            $channel = $this->getConfiguration()->getChannel();
             $this->_loadAllData();
             return $this->_statusHelpers[$channel]->getVersionNumber();
         } catch (Exception $e) {
@@ -511,7 +547,7 @@ class Flagbit_FactFinder_Model_Facade
     public function getActualFactFinderVersionString()
     {
         try {
-            $channel = $this->_getConfiguration()->getChannel();
+            $channel = $this->getConfiguration()->getChannel();
             $this->_loadAllData();
             return $this->_statusHelpers[$channel]->getVersionString();
         } catch (Exception $e) {
@@ -524,7 +560,7 @@ class Flagbit_FactFinder_Model_Facade
     {
         try {
             if(!$channel)
-                $channel = $this->_getConfiguration()->getChannel();
+                $channel = $this->getConfiguration()->getChannel();
             $this->_loadAllData();
             return $this->_statusHelpers[$channel]->getStatusCode();
         } catch (Exception $e) {
