@@ -20,7 +20,7 @@
  * @version   $Id$
  */
 class Flagbit_FactFinder_Helper_Debug extends Mage_Core_Helper_Abstract
-    implements FACTFinder_Abstract_Logger
+    implements FACTFinder\Util\LoggerInterface
 {
     /**
      * Module Configuration File
@@ -42,6 +42,21 @@ class Flagbit_FactFinder_Helper_Debug extends Mage_Core_Helper_Abstract
      * @var string
      */
     const XML_CONFIG_PATH_DEBUG_MODE = 'factfinder/config/debug';
+
+    /**
+     * Returns a new logger with the given name.
+     * @param string $name Name of the logger. This should be the fully
+     *                     qualified name of the class using this instance,
+     *                     so that different sub-namespaces can be configured
+     *                     differently. Note that in the configuration file, the
+     * 					   loggers need to be qualified with periods instead of
+     *                     backslashes.
+     * @return Log4PhpLogger
+     */
+    public static function getLogger($name)
+    {
+        return Mage::helper('factfinder/debug');
+    }
 
     /**
      * Debug Log to file var/log/factfinder.log
