@@ -306,6 +306,13 @@
                 <context></context>
                 <channel></channel>
                 <language></language>
+
+                <!-- encoding settings -->
+                <encoding>
+                    <pageContent>UTF-8</pageContent>
+                    <serverURI>UTF-8</serverURI>
+                    <pageURI>UTF-8</pageURI>
+                </encoding>
             </search>
 			<fallback>
 				<use_fallback>0</use_fallback>
@@ -326,13 +333,6 @@
                 <upsell>0</upsell>
                 <crosssell>0</crosssell>
             </config>
-    
-            <!-- encoding settings -->
-            <encoding>
-                <pageContent>UTF-8</pageContent>
-                <serverURI>UTF-8</serverURI>
-                <pageURI>UTF-8</pageURI>
-            </encoding>
         </factfinder>
     </default>    
     <crontab>

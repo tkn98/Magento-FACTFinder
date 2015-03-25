@@ -34,7 +34,7 @@
 						unit:"<?php echo $this->getUnit();?>",
 						callback:function(left, right){
 							var url = decodeURI('<?php echo $_item->getUrl() ?>'); 
-							window.location.href= url.replace('[VALUE]',left + '+-+' + right);
+							window.location.href= url.replace('[VALUE]',left + ' - ' + right);
 						}
 					});	
 				}

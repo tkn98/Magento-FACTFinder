@@ -325,12 +325,12 @@ class FACTFinderCustom_Configuration implements FACTFinder\Core\ConfigurationInt
      * @return string
      */
     public function getPageContentEncoding() {
-        return $this->getCustomValue('pageContent');
+        return $this->getCustomValue('encoding/pageContent');
     }
 
     public function getClientUrlEncoding()
     {
-        return $this->getCustomValue('pageURI');
+        return $this->getCustomValue('encoding/pageURI');
     }
 
     /**

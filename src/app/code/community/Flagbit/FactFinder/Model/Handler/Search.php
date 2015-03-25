@@ -149,8 +149,7 @@ class Flagbit_FactFinder_Model_Handler_Search
 
             $result = $this->_getFacade()->getAfterSearchNavigation();
 
-            if ($result instanceof FACTFinder_Asn
-                && count($result)) {
+            if ($result instanceof FACTFinder\Data\AfterSearchNavigation && count($result)) {
 
                 foreach ($result as $row) {
 
@@ -158,9 +157,9 @@ class Flagbit_FactFinder_Model_Handler_Search
                         'attribute_code' => $row->getName(),
                         'name' => $row->getName(),
                         'unit' => $row->getUnit(),
-                        'items' => $this->_getAttributeOptions($row->getArrayCopy(), $row->getUnit()),
+                        'items' => $this->_getAttributeOptions($row, $row->getUnit()),
                         'count' => $row->count(),
-                        'type'    => $this->_getFilterType($row->getArrayCopy()),
+                        'type'    => $this->_getFilterType($row),
                         'store_label' => $row->getName(),
                         'link_count' => $row->getDetailedLinkCount(),
                         'is_multiselect' => $row->isMultiSelectStyle()
@@ -177,15 +176,11 @@ class Flagbit_FactFinder_Model_Handler_Search
      * @param array $options
      * @return string
      */
-    protected function _getFilterType($options)
+    protected function _getFilterType(FACTFinder\Data\FilterGroup $options)
     {
-        $defaultType = 'item';
-        foreach($options as $option){
-            if(!$option->getType()){
-                continue;
-            }
-            $defaultType = $option->getType();
-            break;
+        $defaultType = 'text';
+        if($options->isSliderStyle()) {
+            $defaultType = 'slider';
         }
         return $defaultType;
     }
@@ -197,17 +192,18 @@ class Flagbit_FactFinder_Model_Handler_Search
      * @param string $unit
      * @return array
      */
-    protected function _getAttributeOptions($options, $unit = '')
+    protected function _getAttributeOptions(FACTFinder\Data\FilterGroup $options)
     {
         $attributeOption = array();
-        if (!empty($unit)) $unit = ' ' . $unit;
+        $unit = '';
+        if ($options->getUnit()) $unit = ' ' . $options->getUnit();
         $_currentCategoryPath = $this->_getCurrentFactfinderCategoryPath();
         $helper = Mage::helper('factfinder/search');
         foreach($options as $option)
         {
             $queryParams = Mage::helper('factfinder')->getQueryParams($option->getUrl());
 
-            $_filterValue = $this->_getAttributeOptionValue($option);
+            $_filterValue = $this->_getAttributeOptionValue($option, $options);
 
             // Remove current categories from query params
             if(Mage::getStoreConfigFlag('factfinder/activation/navigation') && !$helper->getIsOnSearchPage())
@@ -232,56 +228,53 @@ class Flagbit_FactFinder_Model_Handler_Search
                 unset($queryParams['seoPath']);
             }
 
-            switch ($option->getType())
-            {
-                case "slider":
-                    $queryParams['filter'.$option->getField()] = $_filterValue;
+            if($options->isSliderStyle()) {
+                $queryParams['filter'.$option->getFieldName()] = $_filterValue;
 
-                    $attributeOption[] = array(
-                        'type'    => $option->getType(),
-                        'label' => 'slider',
-                        'value' => $this->_getAttributeOptionValue($option),
-                        'absolute_min' => $option->getAbsoluteMin(),
-                        'absolute_max' => $option->getAbsoluteMax(),
-                        'selected_min' => $option->getSelectedMin(),
-                        'selected_max' => $option->getSelectedMax(),
-                        'count' => true,
-                        'selected' => false, //$option->isSelected()
-                        'requestVar' => 'filter'.$option->getField(),
-                        'queryParams' => $queryParams
-                    );
-                    break;
+                /* @var $option FACTFinder\Data\SliderFilter */
+                $attributeOption[] = array(
+                    'type'  => 'number',
+                    'label' => 'slider',
+                    'value' => $this->_getAttributeOptionValue($option, $options),
+                    'absolute_min' => $option->getAbsoluteMinimum(),
+                    'absolute_max' => $option->getAbsoluteMaximum(),
+                    'selected_min' => $option->getSelectedMinimum(),
+                    'selected_max' => $option->getSelectedMaximum(),
+                    'count' => true,
+                    'selected' => false, //$option->isSelected()
+                    'requestVar' => 'filter'.$option->getFieldName(),
+                    'queryParams' => $queryParams
+                );
+            } else {
+                if (!Mage::helper('core/string')->strlen($option->getLabel())) {
+                    continue;
+                }
 
-                default:
-                    if (!Mage::helper('core/string')->strlen($option->getValue())) {
-                        continue;
-                    }
+                // remove Categories from top Level Navigation
+                if(Mage::getStoreConfigFlag('factfinder/activation/navigation')
+                    && !$helper->getIsOnSearchPage()
+                    && strpos($option->getField(),'categoryROOT') !== FALSE
+                    && in_array($option->getValue(), $_currentCategoryPath)
+                ){
+                    continue;
+                }
 
-                    // remove Categories from top Level Navigation
-                    if(Mage::getStoreConfigFlag('factfinder/activation/navigation')
-                        && !$helper->getIsOnSearchPage()
-                        && strpos($option->getField(),'categoryROOT') !== FALSE
-                        && in_array($option->getValue(), $_currentCategoryPath)
-                    ){
-                        continue;
-                    }
+                /* @var $option FACTFinder\Data\Filter */
+                $attributeOptionData = array(
+                    'type'    => 'attribute',
+                    'label' => $option->getLabel() . $unit,
+                    'value' => $_filterValue,
+                    'count' => $option->getMatchCount(),
+                    'selected' => $option->isSelected(),
+                    'clusterLevel' => $option->getClusterLevel(),
+                    'requestVar' => 'filter'.$option->getFieldName(),
+                    'previewImage' => $option->getPreviewImage()
+                );
 
-                    $attributeOptionData = array(
-                        'type'    => 'attribute',
-                        'label' => $option->getValue() . $unit,
-                        'value' => $_filterValue,
-                        'count' => $option->getMatchCount(),
-                        'selected' => $option->isSelected(),
-                        'clusterLevel' => $option->getClusterLevel(),
-                        'requestVar' => 'filter'.$option->getField(),
-                        'previewImage' => $option->getPreviewImage()
-                    );
+                $attributeOptionData['seoPath'] = $seoPath;
+                $attributeOptionData['queryParams'] = $queryParams;
 
-                    $attributeOptionData['seoPath'] = $seoPath;
-                    $attributeOptionData['queryParams'] = $queryParams;
-
-                    $attributeOption[] = $attributeOptionData;
-                    break;
+                $attributeOption[] = $attributeOptionData;
             }
         }
         return $attributeOption;
@@ -293,28 +286,22 @@ class Flagbit_FactFinder_Model_Handler_Search
      * @param string $option
      * @return string
      */
-    protected function _getAttributeOptionValue($option)
+    protected function _getAttributeOptionValue(FACTFinder\Data\Filter $option, FACTFinder\Data\FilterGroup $filterGroup)
     {
         $value = null;
-        switch ($option->getType()) {
 
-            // handle Slider Attributes
-            case "slider":
-                $value = '[VALUE]';
-                break;
-            // handle default Attributes
-            default:
+        if($filterGroup->isSliderStyle()) {
+            $value = '[VALUE]';
+        } else {
+            $queryParams = Mage::helper('factfinder')->getQueryParams($option->getUrl());
 
-                $queryParams = Mage::helper('factfinder')->getQueryParams($option->getUrl());
-
-                if(isset($queryParams['filter'.$option->getField()])) {
-                    $value = $queryParams['filter'.$option->getField()];
-                } else {
-                    $value = '';
-                }
-
-                break;
+            if(isset($queryParams['filter'.$option->getFieldName()])) {
+                $value = $queryParams['filter'.$option->getFieldName()];
+            } else {
+                $value = '';
+            }
         }
+
         return $value;
     }
 

@@ -77,7 +77,7 @@ class Flagbit_FactFinder_Model_Facade
 
     public function __construct($arg = null)
     {
-        if ($arg === null || !($arg instanceof FACTFinder_Abstract_Logger)) {
+        if ($arg === null || !($arg instanceof FACTFinder\Util\LoggerInterface)) {
             $arg = Mage::helper('factfinder/debug');
         }
 

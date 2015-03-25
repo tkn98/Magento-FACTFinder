@@ -86,16 +86,13 @@ class Flagbit_FactFinder_Block_Layer extends Flagbit_FactFinder_Block_Layer_Abst
                 ->setAttributeModel($attribute)
                 ->init();
 
-            switch($attribute->getType()){
-
-                case 'slider':
-                    if(!($this->getLayout()->getBlock('ffslider') instanceof  Flagbit_FactFinder_Block_Filter_Slider)){
-                        $this->getLayout()->getBlock('head')->setChild('ffslider', $this->getLayout()->createBlock('factfinder/filter_slider'));
-                    }
-                    $filterBlock->setTemplate('factfinder/filter/slider.phtml');
-                    $filterBlock->setData((current($attribute->getItems())));
-                    $filterBlock->setUnit($attribute->getUnit());
-                    break;
+            if($attribute->getType() == 'slider') {
+                if(!($this->getLayout()->getBlock('ffslider') instanceof  Flagbit_FactFinder_Block_Filter_Slider)){
+                    $this->getLayout()->getBlock('head')->setChild('ffslider', $this->getLayout()->createBlock('factfinder/filter_slider'));
+                }
+                $filterBlock->setTemplate('factfinder/filter/slider.phtml');
+                $filterBlock->setData((current($attribute->getItems())));
+                $filterBlock->setUnit($attribute->getUnit());
             }
 
             $this->setChild($attribute->getAttributeCode().'_filter', $filterBlock);
