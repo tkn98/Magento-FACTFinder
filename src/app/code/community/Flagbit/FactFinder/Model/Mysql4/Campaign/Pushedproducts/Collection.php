@@ -64,8 +64,7 @@ class Flagbit_FactFinder_Model_Mysql4_Campaign_Pushedproducts_Collection
     		$productIds[$record->getId()]  = new Varien_Object(
 						array(
 							'similarity' => $record->getSimilarity(),
-							'position' => $record->getPosition(),
-							'original_position' => $record->getOriginalPosition()
+							'position' => $record->getPosition()
 						)
 					);
     	}
@@ -80,7 +79,6 @@ class Flagbit_FactFinder_Model_Mysql4_Campaign_Pushedproducts_Collection
         	);
 
 	        $this->_pageSize = null;
-	        $entity = $this->getEntity();
 
 			$this->getSelect()->reset(Zend_Db_Select::LIMIT_COUNT);
            	$this->getSelect()->reset(Zend_Db_Select::LIMIT_OFFSET);
