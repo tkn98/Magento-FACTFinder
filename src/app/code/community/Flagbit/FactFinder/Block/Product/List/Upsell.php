@@ -77,7 +77,7 @@ class Flagbit_FactFinder_Block_Product_List_Upsell extends Mage_Catalog_Block_Pr
             /* @var $product Mage_Catalog_Model_Product */
 
             // build new FACTFinder_Result with combined data
-            $recommendations = FF::getInstance('result', $upsells, count($upsells));
+            $recommendations = Mage::getSingleton('factfinder/facade')->getNewResultObject($upsells, 'result', count($upsells));
 
             if ($recommendations == null) {
                 throw new Exception('No recommendations given - check connection to FACT-Finder and FACT-Finder configuration');

@@ -521,4 +521,14 @@ class Flagbit_FactFinder_Model_Facade
     public function getDic() {
         return $this->_dic;
     }
+
+    public function getNewResultObject($records, $refKey, $foundRecordsCount)
+    {
+        return FF::getInstance(
+            'Data\Result',
+            $records,
+            $refKey,
+            $foundRecordsCount
+        );
+    }
 }
