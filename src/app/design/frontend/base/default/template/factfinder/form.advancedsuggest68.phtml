@@ -30,6 +30,7 @@
 			<?php if (Mage::helper('factfinder/search')->getIsEnabled(false, 'suggest')):?>
 								
 				var loadDataCallback = function(data) {
+                    data = data.suggestions;
 					// Internationalization lookup:
 					// Add a new anonymous object for every string you want to internationalize (with the property being the string).
 					// These objects consist of one string for each locale, where the property is the locale code.
