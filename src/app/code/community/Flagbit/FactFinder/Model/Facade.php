@@ -263,8 +263,10 @@ class Flagbit_FactFinder_Model_Facade
         $adapterId = $this->_getAdapterIdentifier($type, $channel, $id);
         $this->_paramHashes[$adapterId] = $this->_createParametersHash($params);
 
-        foreach($params as $key => $value)
+        foreach($params as $key => $value) {
             $this->_dic['requestParser']->getClientRequestParameters()->set($key, $value);
+            $this->_dic['requestParser']->getRequestParameters()->set($key, $value);
+        }
     }
 
     /**
@@ -360,31 +362,6 @@ class Flagbit_FactFinder_Model_Facade
         return $this;
     }
 
-    /**
-     * @return FACTFinder_Abstract_DataProvider
-     **/
-    protected function _getParallelDataProvider()
-    {
-        $config = $this->getConfiguration();
-        $params = $this->_getParamsParser()->getServerRequestParams();
-        $dp = FACTFinder_Http_ParallelDataProvider::getDataProvider($params, $config, $this->_logger);
-        return $dp;
-    }
-
-    /**
-     * @return FACTFinder_ParametersParser
-     */
-    protected function _getParamsParser()
-    {
-        if ($this->_paramsParser == null) {
-            $this->_paramsParser = FF::getInstance(
-                'Data\SearchParameters',
-                $this->_dic['requestParser']->getRequestParameters()
-            );
-        }
-        return $this->_paramsParser;
-    }
-
     public function getManagementUrl()
     {
         return $this->_getUrlBuilder()
@@ -422,7 +399,7 @@ class Flagbit_FactFinder_Model_Facade
 
     public function getAfterSearchNavigation($channel = null, $id = null)
     {
-        return $this->_getFactFinderObject("search", "getAsn", $channel, $id);
+        return $this->_getFactFinderObject("search", "getAfterSearchNavigation", $channel, $id);
     }
 
     public function getCampaigns($channel = null, $id = null)
@@ -445,9 +422,15 @@ class Flagbit_FactFinder_Model_Facade
         return $this->_getFactFinderObject("search", "getError", $channel, $id);
     }
 
-    public function getSearchParams($channel = null, $id = null)
+    public function getSearchParams()
     {
-        return $this->_getFactFinderObject("search", "getSearchParams", $channel, $id);
+        if ($this->_paramsParser == null) {
+            $this->_paramsParser = FF::getInstance(
+                'Data\SearchParameters',
+                $this->_dic['requestParser']->getRequestParameters()
+            );
+        }
+        return $this->_paramsParser;
     }
 
     public function getSearchResult($channel = null, $id = null)
@@ -477,34 +460,15 @@ class Flagbit_FactFinder_Model_Facade
 
     protected function _getFactFinderObject($type, $objectGetter, $channel = null, $id = null)
     {
-        $cacheKey = '';
         $data = null;
 
-        // Temporary disable of the cache due to wrong/no search results
-        if (false && $this->_useSearchCaching())
-        {
-            $adapterId = $this->_getAdapterIdentifier($type, $channel, $id);
-            $cacheKey = 'FACTFINDER_'.$adapterId . '_' . $objectGetter .'_'. $this->_getParametersHash($type, $channel, $id);
-            if($cache = Mage::app()->loadCache($cacheKey))
-            {
-                $data = unserialize($cache);
-            }
+        try {
+            $adapter = $this->_getAdapter($type, $channel, $id);
+            $data = $adapter->$objectGetter();
+        } catch (Exception $e) {
+            Mage::logException($e);
         }
 
-        if ($data == null) {
-            try {
-                $adapter = $this->_getAdapter($type, $channel, $id);
-                $data = $adapter->$objectGetter();
-
-                if($this->_useSearchCaching())
-                {
-                    Mage::app()->saveCache(serialize($data), $cacheKey, array('FACTFINDER_SEARCH'), 600);
-                }
-
-            } catch (Exception $e) {
-                Mage::logException($e);
-            }
-        }
         return $data;
     }
 
@@ -552,16 +516,6 @@ class Flagbit_FactFinder_Model_Facade
             Mage::logException($e);
             return null;
         }
-    }
-
-    protected function _loadAllData()
-    {
-        FACTFinder_Http_ParallelDataProvider::loadAllData();
-    }
-
-    public function getRequestParams()
-    {
-        return $this->_getParamsParser()->getRequestParams();
     }
 
     public function getDic() {

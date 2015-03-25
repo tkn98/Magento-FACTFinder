@@ -8,7 +8,6 @@ class Flagbit_FactFinder_Block_Layer_State extends Mage_Catalog_Block_Layer_Stat
      */
     public function getClearUrl()
     {
-        Mage::log($this->getRequest()->getParams(), null, 'filter_debug.log');
         $currentParams = $this->getRequest()->getParams();
         foreach($currentParams as $paramKey => $paramValue) {
             if($paramKey != 'q') {

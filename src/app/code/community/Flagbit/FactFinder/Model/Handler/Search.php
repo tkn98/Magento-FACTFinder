@@ -35,7 +35,7 @@ class Flagbit_FactFinder_Model_Handler_Search
         // search Helper
         $helper = Mage::helper('factfinder/search');
         $_request = Mage::app()->getRequest();
-        $requestParams = $this->_getFacade()->getRequestParams();
+        $searchParams = $this->_getFacade()->getSearchParams();
         $params = array();
 
         if (strpos(Mage::getStoreConfig('factfinder/config/internal_ip'), Mage::helper('core/http')->getRemoteAddr()) !== false) {
@@ -49,14 +49,14 @@ class Flagbit_FactFinder_Model_Handler_Search
                 $params['idsOnly'] = FF::getSingleton('configuration')->getIdsOnly() ? 'true' : 'false';
                 $params['query'] = $_query;
 
-                $count = isset($requestParams['count']) ? $requestParams['count'] : 0;
+                $count = $searchParams->getProductsPerPage() ? $searchParams->getProductsPerPage() : 0;
                 if ($count > 0) {
                     $params['productsPerPage'] = $count;
-                    $params['page'] = ($requestParams['offset'] / $count) + 1;
+                    $params['page'] = $searchParams->getCurrentPage();
                 }
 
                 // add Sorting Param
-                foreach($requestParams as $key => $value){
+                foreach($searchParams->getSortings() as $key => $value){
                     if(substr($key, 0, 6) == 'order_') {
                         $key = substr($key, 6);
                         if(!in_array($key, array('position', 'relevance'))) {
@@ -78,7 +78,7 @@ class Flagbit_FactFinder_Model_Handler_Search
             case "catalogsearch":
             default:
                 // add Default Params
-                $params['idsOnly'] = FF::getSingleton('configuration')->getIdsOnly() ? 'true' : 'false';
+                $params['idsOnly'] = $this->_getFacade()->getConfiguration()->getIdsOnly() ? 'true' : 'false';
                 $params['productsPerPage'] = $helper->getPageLimit();
 
                 if ($_request->getModuleName() == 'catalogsearch') {
@@ -91,7 +91,7 @@ class Flagbit_FactFinder_Model_Handler_Search
                 }
 
                 // add Sorting Param, but only if it was set explicitly via url
-                foreach($requestParams as $key => $value) {
+                foreach($searchParams->getSortings() as $key => $value) {
                     if($key == 'order'
                         && $helper->getCurrentOrder()
                         && $helper->getCurrentDirection()
@@ -343,7 +343,7 @@ class Flagbit_FactFinder_Model_Handler_Search
         if($this->_searchResultCount === null)
         {
             $result = $this->_getFacade()->getSearchResult();
-            if($result instanceof FACTFinder_Result)
+            if($result instanceof \FACTFinder\Data\Result)
                 $this->_searchResultCount = $result->getFoundRecordsCount();
             if($this->_searchResultCount === null)
                 $this->_searchResultCount = 0;

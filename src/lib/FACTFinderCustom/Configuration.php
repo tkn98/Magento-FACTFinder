@@ -19,6 +19,9 @@ class FACTFinderCustom_Configuration implements FACTFinder\Core\ConfigurationInt
 	private $secondaryChannels;
     private $storeId = null;
 
+    // Should the search adapters retrieve only product ids? (otherwise, full records will be requested)
+    private $idsOnly = true;
+
     public function __construct($config = null)
     {
     	$this->config = new Varien_Object($config);
@@ -321,12 +324,31 @@ class FACTFinderCustom_Configuration implements FACTFinder\Core\ConfigurationInt
      *
      * @return string
      */
-    function getPageContentEncoding() {
+    public function getPageContentEncoding() {
         return $this->getCustomValue('pageContent');
     }
 
     public function getClientUrlEncoding()
     {
         return $this->getCustomValue('pageURI');
+    }
+
+    /**
+     * Sets the idsOnly flag, which determines whether product ids or full records should be requested by the search adapters.
+     * Request only products ids if true, full records otherwise
+     *
+     * @param	bool	value
+     **/
+    public function setIdsOnly($value) {
+        $this->idsOnly = $value;
+    }
+
+    /**
+     * Gets the idsOnly flag, which determines whether product ids or full records should be requested by the search adapters
+     *
+     * @return bool
+     **/
+    public function getIdsOnly() {
+        return $this->idsOnly;
     }
 }

@@ -19,7 +19,7 @@ class Flagbit_FactFinder_Model_Handler_SecondarySearch
     {
         $params = array();
         $params['query'] = Mage::helper('factfinder/search')->getQueryText();
-        $this->_secondaryChannels = FF::getSingleton('configuration')->getSecondaryChannels();
+        $this->_secondaryChannels = $this->_getFacade()->getConfiguration()->getSecondaryChannels();
 
         foreach($this->_secondaryChannels AS $channel)
         {
