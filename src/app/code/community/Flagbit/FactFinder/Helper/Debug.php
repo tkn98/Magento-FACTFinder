@@ -43,6 +43,8 @@ class Flagbit_FactFinder_Helper_Debug extends Mage_Core_Helper_Abstract
      */
     const XML_CONFIG_PATH_DEBUG_MODE = 'factfinder/config/debug';
 
+    protected static $_loggerInstance = null;
+
     /**
      * Returns a new logger with the given name.
      * @param string $name Name of the logger. This should be the fully
@@ -55,7 +57,11 @@ class Flagbit_FactFinder_Helper_Debug extends Mage_Core_Helper_Abstract
      */
     public static function getLogger($name)
     {
-        return Mage::helper('factfinder/debug');
+        if(self::$_loggerInstance === null) {
+            self::$_loggerInstance = new self;
+        }
+
+        return self::$_loggerInstance;
     }
 
     /**

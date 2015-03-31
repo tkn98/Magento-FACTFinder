@@ -41,8 +41,8 @@ class Flagbit_FactFinder_Model_Handler_Suggest
         $params['format'] = 'json';
         $params['query'] = $this->_query;
 
-        $this->_primaryChannel = FF::getSingleton('configuration')->getChannel();
-        $this->_secondaryChannels = FF::getSingleton('configuration')->getSecondaryChannels();
+        $this->_primaryChannel = $this->_getFacade()->getConfiguration()->getChannel();
+        $this->_secondaryChannels = $this->_getFacade()->getConfiguration()->getSecondaryChannels();
 
         $this->_getFacade()->configureSuggestAdapter($params);
         foreach($this->_secondaryChannels AS $channel)
@@ -73,20 +73,27 @@ class Flagbit_FactFinder_Model_Handler_Suggest
         // Retrieve and merge all suggestions
         // Add a new "channel" field in the process
 
-        $suggestResult = Zend_Json_Decoder::decode($this->_getAndSanitizeSuggestions());
-        foreach($suggestResult as &$item)
-            $item["channel"] = $this->_primaryChannel;
+        $suggestResult = $this->_getAndSanitizeSuggestions();
 
         foreach($this->_secondaryChannels AS $channel)
         {
-            $result = Zend_Json_Decoder::decode($this->_getAndSanitizeSuggestions($channel));
-            foreach($result as &$item)
-                $item["channel"] = $channel;
-
+            $result = $this->_getAndSanitizeSuggestions($channel);
             $suggestResult = array_merge($suggestResult, $result);
         }
 
-        return $this->_jqueryCallback.'('.Zend_Json_Encoder::encode($suggestResult).');';
+        $resultArray = array();
+        foreach($suggestResult as $resultQuery) {
+            /* @var $resultQuery FACTFinder\Data\SuggestQuery */
+            $resultArray['suggestions'][] = array(
+                'attributes'    => $resultQuery->getAttributes(),
+                'hitCount'      => $resultQuery->getHitCount(),
+                'image'         => $resultQuery->getImageUrl(),
+                'searchParams'  => $resultQuery->getUrl(),
+                'type'          => $resultQuery->getType()
+            );
+        }
+
+        return $this->_jqueryCallback.'('.Zend_Json_Encoder::encode($resultArray).');';
     }
 
     protected function _assembleSuggestResultAsArray()

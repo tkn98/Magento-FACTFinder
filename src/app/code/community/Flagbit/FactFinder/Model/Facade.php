@@ -75,7 +75,7 @@ class Flagbit_FactFinder_Model_Facade
      */
     private $_useCaching = null;
 
-    public function __construct($arg = null)
+    public function __construct($arg = null, $config = null)
     {
         if ($arg === null || !($arg instanceof FACTFinder\Util\LoggerInterface)) {
             $arg = Mage::helper('factfinder/debug');
@@ -83,12 +83,12 @@ class Flagbit_FactFinder_Model_Facade
 
         $dic = FF::getInstance('Util\Pimple');
 
-        $dic['loggerClass'] = function($c) {
-            return Mage::helper('factfinder/debug');
+        $dic['loggerClass'] = function($c) use ($arg) {
+            return $arg;
         };
 
-        $dic['configuration'] = function($c) {
-            return new FACTFinderCustom_Configuration();
+        $dic['configuration'] = function($c) use ($config) {
+            return new FACTFinderCustom_Configuration($config);
         };
 
         $dic['request'] = $dic->factory(function($c) {
