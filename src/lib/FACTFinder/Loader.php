@@ -56,7 +56,6 @@ class Loader
     public static function autoload($classname)
     {
         $filename = self::getFilename($classname);
-        print_r($filename);
         if (file_exists($filename))
             include_once $filename;
     }
